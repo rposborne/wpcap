@@ -1,6 +1,20 @@
 # Wpcap
 
-TODO: Write a gem description
+WPcap is a set of capistrano reciepes designed to deploy wordpress instaliations to ubuntu 12.04 and up servers. It provides database and asset sync tasks, a helper appication to setup a brand new wordpress install ready to be deployed by wpcap.  
+
+WPcap is opinionated, and currently reasonably narrow minded.  
+
+WPcap assumptions
+*Local Macine is a Mac running MAMP
+*Remote Server is a brand new Ubuntu Server 
+*Passwordless access to remote server has be established (ssh keys) 
+*Wordpress is using mysql
+
+WPcap Server Configuration
+*nginx stable
+*php5-fpm stable
+*mysql > 5.5
+*varnish (Optional)
 
 ## Installation
 
@@ -18,7 +32,34 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Create a new projet
+  
+    wpcap create mynewproject
+
+Build a remote server
+  
+    cap deploy:install
+
+Setup a remote server for this wordpress install
+
+    cap deploy:setup
+
+Deploy your latest code to the server
+
+    cap deploy
+    
+Push Local Database and Assets to remote server
+
+    cap db:push
+    
+Pull Remote Database and Assets to local enviroment
+
+    cap db:pull
+    
+## ToDo
+
+Covert a predone wordpress install into a wpcap style directory
+Do not require MAMP
 
 ## Contributing
 
