@@ -20,15 +20,7 @@ WPcap server configuration
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-    gem 'wpcap'
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
+Install it:
 
     $ gem install wpcap
 
