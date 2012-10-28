@@ -4,12 +4,7 @@
 # cap production deploy:setup
 # cap production deploy
 
-# --------------------------------------------
-# Variables
-# --------------------------------------------
-# Database Name
-
 set :user, "root"
-set :application_url, "http://cochrans.burningpony.com"
-server "198.61.178.158", :web, :app, :db, primary: true
+set :application_url, "your full url here includeing the protocol (https/http)"
+server "your server address or url here", :web, :app, :db, primary: true
 
