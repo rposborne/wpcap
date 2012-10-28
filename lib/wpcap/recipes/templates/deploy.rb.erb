@@ -1,0 +1,35 @@
+
+set :application, "your application web address here"  #Your Project webaddress 
+set :repository,  "your repo location here"
+set :branch, :master
+
+set :scm, :git
+set :copy_exclude, [".git", ".DS_Store", ".gitignore", ".gitmodules"]
+
+set :stages, %w(production staging)
+set :default_stage, "staging"
+set :port, 22
+
+#We assume both our staging and our productions servers are configured using this script and are identical deploys.
+set(:deploy_to) { "/home/#{user}/#{application}" }
+
+# Database Backup Path
+set :backups_path, "#{deploy_to}/backups"
+
+# Wordpress Uploads Path
+set :uploads_path, "assets"
+
+#Are you using MAMP on your local machine?
+set :mamp , true
+
+# if you want to clean up old releases on each deploy uncomment this:
+set :keep_releases, 5
+after "deploy", "deploy:cleanup"
+
+require "wpcap/recipes/base"
+require "wpcap/recipes/server"
+require "wpcap/recipes/check"
+require "wpcap/recipes/mysql"
+require "wpcap/recipes/nginx"
+require "wpcap/recipes/php"
+require "wpcap/recipes/wordpress"

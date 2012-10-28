@@ -1,0 +1,8 @@
+<%= stage %>:
+  prefix: <%= db_prefix %>
+  database: <%= db_database[0..15] %>
+  username: <%= db_username[0..15] %>
+  password: <%= db_password[0..15] %>
+  priv_username: root
+  priv_password: <%= db_priv_pass[0..15] %>
+  host: localhost

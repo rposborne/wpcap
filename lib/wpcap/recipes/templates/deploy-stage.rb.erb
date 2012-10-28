@@ -1,0 +1,15 @@
+# Deploy WordPress site using Capistrano
+#
+# Usage:
+# cap production deploy:setup
+# cap production deploy
+
+# --------------------------------------------
+# Variables
+# --------------------------------------------
+# Database Name
+
+set :user, "root"
+set :application_url, "http://cochrans.burningpony.com"
+server "198.61.178.158", :web, :app, :db, primary: true
+
