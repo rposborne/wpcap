@@ -10,9 +10,14 @@ configuration.load do
   
   set_default :uploads_path, "wp-content/uploads"
 
-  if mamp
-    set :local_mysql_path , "/Applications/MAMP/Library/bin/"
-    set :local_httpd_conf_path , "/Applications/MAMP/conf/apache/httpd.conf"
+  unless local_mysql_path and local_httpd_conf_path
+    if mamp
+      set :local_mysql_path , "/Applications/MAMP/Library/bin/"
+      set :local_httpd_conf_path , "/Applications/MAMP/conf/apache/httpd.conf"
+    else
+      set :local_mysql_path , ""
+      set :local_httpd_conf_path , "/etc/apache2/httpd.conf"
+    end
   end
 
   namespace :db do 
