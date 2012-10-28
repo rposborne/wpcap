@@ -6,7 +6,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["russell@burningpony.com"]
   gem.description   = "A Tool to Setup, Maintain, and Deploy Capistrano Driven Wordpress Sites"
   gem.summary       = "A Tool to Setup, Maintain, and Deploy Capistrano Driven Wordpress Sites on any cloud server or linux macine"
-  gem.homepage      = ""
+  gem.homepage      = "https://github.com/rposborne/wpcap"
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
