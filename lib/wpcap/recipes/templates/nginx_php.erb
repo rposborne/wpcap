@@ -1,6 +1,6 @@
 server {
   listen 80;
-  server_name <%= application %>, <%= application_url.gsub("http://", "") #todo this is subpar%> ;
+  server_name <%= application %>, <%= application_url.gsub(/^https?:\/\//, "") %> ;
   root <%= current_path %>/app;
   index index.php;
 
