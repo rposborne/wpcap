@@ -11,9 +11,12 @@ server {
   error_log           <%= shared_path %>/logs/error.log;
 
   location  ^~ /assets/ {
-    rewrite ^/assets/css/(.*)$ /wp-content/themes/cochrans/assets/css/$1 last;
-    rewrite ^/assets/js/(.*)$ /wp-content/themes/cochrans/assets/js/$1 last;
-    rewrite ^/assets/img/(.*)$ /wp-content/themes/cochrans/assets/img/$1 last;
+    rewrite ^/assets/css/(.*)$ /wp-content/themes/<%= wp_template %>/assets/css/$1 last;
+    rewrite ^/assets/js/(.*)$ /wp-content/themes/<%= wp_template %>/assets/js/$1 last;
+    rewrite ^/assets/img/(.*)$ /wp-content/themes/<%= wp_template %>/assets/img/$1 last;
+  }
+  
+  location  ^~ /plugins/ {
     rewrite ^/plugins/(.*)$ /wp-content/plugins/$1 last;
   }
   
