@@ -10,15 +10,14 @@ configuration.load do
   
   set_default :uploads_path, "wp-content/uploads"
 
-  unless local_mysql_path and local_httpd_conf_path
-    if mamp
-      set :local_mysql_path , "/Applications/MAMP/Library/bin/"
-      set :local_httpd_conf_path , "/Applications/MAMP/conf/apache/httpd.conf"
-    else
-      set :local_mysql_path , ""
-      set :local_httpd_conf_path , "/etc/apache2/httpd.conf"
-    end
+  if mamp
+    set_default :local_mysql_path , "/Applications/MAMP/Library/bin/"
+    set_default :local_httpd_conf_path , "/Applications/MAMP/conf/apache/httpd.conf"
+  else
+    set_default :local_mysql_path , ""
+    set_default :local_httpd_conf_path , "/etc/apache2/httpd.conf"
   end
+
 
   namespace :db do 
     desc "Alias for db:mysql:pull"
@@ -74,11 +73,6 @@ configuration.load do
         Wpcap::Utility.error("This Wordpress Installation does not appear to have a wp-config.php file (Please create one at app/wp-config.php )")
         abort 
       end
-      #make sure the stage template has been configured
-      #unless  File.exists?("config/wp-config.#{stage}.php")
-      #  Wpcap::Utility.error("There is no wp_config template for #{stage} enviroment.  (Please create one at config/enviroments/wp-config.#{stage}.php)")
-      #  abort 
-      #end
     end
     before "deploy", "deploy:check_code"
     before "deploy:setup", "deploy:check_code"
