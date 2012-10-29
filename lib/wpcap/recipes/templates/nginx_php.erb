@@ -1,8 +1,9 @@
 server {
   listen 80;
-  server_name <%= application.chomp(".com")%>.burningpony.com, <%= application.chomp(".com")%>.kmdig.com, <%=application_url.gsub("http://", "")%> ;
-  index index.php index.html index.htm;
+  server_name <%= application %>, <%= application_url.gsub("http://", "") #todo this is subpar%> ;
   root <%= current_path %>/app;
+  index index.php;
+
   client_max_body_size 4G;
   keepalive_timeout 10;
 
