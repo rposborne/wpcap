@@ -175,7 +175,15 @@ configuration.load do
       run "cd #{current_path} && chown -R #{user} . && find . -type d -print0 | xargs -0 chmod 755"
       run "cd #{shared_path}/uploads && chown -R #{user} . && chmod 755 -R ."
     end
-
+    
+    desc "[internal] get current wp template from local db"
+    task :current_wp_template, :except => { :no_release => true } do
+      db.mysql.prepare_env(:development)
+      template = run_locally "#{local_mysql_path}mysql -u #{db_username} -p#{db_password} #{db_database} -e 'SELECT `option_value` FROM `#{db_prefix}options` WHERE `option_name` = \"template\"'"
+      set(:wp_template) { template.split("\n")[1]  }
+    end
+    before "nginx:setup", "wordpress:current_wp_template"
+    
     after "wordpress:symlink", "wordpress:create_config"
     after "wordpress:create_config", "wordpress:protect"
     after "deploy", "wordpress:symlink"
