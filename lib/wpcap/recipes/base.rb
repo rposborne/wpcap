@@ -47,4 +47,13 @@ configuration.load do
       run "#{sudo} apt-get -y install git debconf-utils python-software-properties"
     end
   end
+  
+  desc "Tail all or a single remote file"
+  task :tail do
+    ENV["LOGFILE"] ||= "*.log"
+    run "tail -f #{shared_path}/logs/#{ENV["LOGFILE"]}" do |channel, stream, data|
+      puts "#{data}"
+      break if stream == :err
+    end
+  end
 end
