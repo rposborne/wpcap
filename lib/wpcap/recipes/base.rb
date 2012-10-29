@@ -13,11 +13,6 @@ configuration.load do
     put ERB.new(erb).result(binding), to
   end
 
-  def environment(from, to)
-    erb = File.read(File.expand_path("../../environments/#{from}", __FILE__))
-    put ERB.new(erb).result(binding), to
-  end
-
   def set_default(name, *args, &block)
     set(name, *args, &block) unless exists?(name)
   end
@@ -38,7 +33,7 @@ configuration.load do
     # have to escape this once if running via double ssh
     command += [self[:gateway] ? '\&\&' : '&&']
     command += Array(cmd)
-    system *command
+    system * command
   end
 
   default_run_options[:pty] = true
