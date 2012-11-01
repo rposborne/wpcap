@@ -2,6 +2,7 @@ require 'erb'
 require 'yaml'
 require 'wpcap'
 require 'wpcap/utility'
+require 'wpcap/backup'
 
 configuration = Capistrano::Configuration.respond_to?(:instance) ?
 Capistrano::Configuration.instance(:must_exist) :
@@ -14,12 +15,29 @@ configuration.load do
       task :install_server, roles: :db do
         create_yaml
         prepare_env
-        run "#{sudo}  apt-get -y update"
-        run "#{sudo} echo 'mysql-server-5.5 mysql-server/root_password password #{db_priv_pass}' | #{sudo} debconf-set-selections"
-        run "#{sudo} echo 'mysql-server-5.5 mysql-server/root_password_again password #{db_priv_pass}' | #{sudo} debconf-set-selections"
+        
+        run "#{sudo} apt-get -y update"
+        run "#{sudo} echo 'mysql-server-5.1 mysql-server/root_password password #{db_priv_pass} ' | #{sudo} debconf-set-selections"
+        run "#{sudo} echo 'mysql-server-5.1 mysql-server/root_password_again password #{db_priv_pass} ' | #{sudo} debconf-set-selections"
         run "#{sudo} apt-get -y install mysql-server"
       end
       after "deploy:install", "db:mysql:install_server"
+      
+      desc "Save db passwords on server in enviroment so new wpcap installs may provision local databases. "
+      task :set_priv_environment, roles: :db do
+        #Generate a password for the mysql install  (this will be saved in the enviroment vars of the server)
+        if remote_config(:db_priv_pass).nil?
+          
+          set :db_priv_pass, random_password(16)
+          run "#{sudo} mkdir -p /etc/wpcap"
+          save_yaml({:db_priv_pass => db_priv_pass, :db_priv_user => db_priv_user}, "/tmp/privdb.yaml")
+          upload "/tmp/privdb.yaml", "/etc/wpcap/database.yaml"
+
+        else 
+          Wpcap::Utility.error("MYSQL Server Already Configured")
+        end
+      end
+      before "db:mysql:install_server", "db:mysql:set_priv_environment"
       
       desc "Install Mysql Database Client Bindings"
       task :install_client, roles: :web do
@@ -37,7 +55,7 @@ configuration.load do
       
         prepare_env
         run "mkdir -p #{backups_path}"
-        filename = "db_backup.#{Time.now.utc.to_i}.sql.bz2"
+        filename = "db_backup_#{Time.now.to_f}.sql.bz2"
         filepath = "#{backups_path}/#{filename}"
         on_rollback { run "rm #{filepath}" }
         run "mysqldump --user=#{db_username} -p --host=#{db_host} #{db_database} | bzip2 -z9 > #{filepath}" do |ch, stream, out|
@@ -54,7 +72,24 @@ configuration.load do
           puts out
         end
       end
-    
+      
+      desc "Restores the database from the latest compressed dump"
+      task :restore, :roles => :db, :only => { :primary => true } do
+        prepare_env
+        backup_list = capture "cd #{backups_path}; ls -lrt"
+        backups = Wpcap::Backup.parse( backup_list )
+         
+        backups.each_with_index do |backup, count|
+          printf "%-5s %-20s %-10s %s\n", count + 1 , backup.type , backup.size , backup.at
+        end
+        puts "Select a Backup you wish to restore (1-#{backups.size})"
+        restore_index = $stdin.gets.chomp
+        if restore_index
+          backup_to_restore = backups[restore_index.to_i - 1 ]
+          puts "#{backups_path}/#{backup_to_restore.name}"
+        end
+      end
+      
       desc "Restores the database from the latest downloaded compressed dump"
       task :local_restore do
         prepare_env(:development)
@@ -74,7 +109,7 @@ configuration.load do
         prepare_env(:development)
         run_locally "#{local_mysql_path}mysqldump --user #{db_username} --password=#{db_password} #{db_database} | bzip2 -z9 > #{local_dump}"
         run "mkdir -p #{backups_path}"
-        filename = "local_upload.#{Time.now.to_f}.sql.bz2"
+        filename = "local_upload_#{Time.now.to_f}.sql.bz2"
         filepath = "#{backups_path}/#{filename}"
         upload "#{local_dump}" , "#{filepath}"
       end
@@ -125,10 +160,10 @@ configuration.load do
         template_path = "#{shared_path}/config/database.yml"
       
         unless db_config[rails_env]
-          set :db_priv_pass, random_password(16)
           set :db_username, "#{application.split(".").first}_#{stage}"
           set :db_database, "#{application.split(".").first}_#{stage}"
           set :db_password, random_password(16)
+          set :db_prefix, db_config["development"]["prefix"]
           run "mkdir -p #{shared_path}/config"
           template "mysql.yml.erb", template_path
           server_yaml = capture "cat #{template_path}"
@@ -141,46 +176,76 @@ configuration.load do
         @db_config ||= fetch_db_config
       end
     
-      def fetch_db_config
-        YAML.load(File.open("config/database.yml"))
+      def remote_config(key)
+        @remote_config ||= fetch_db_config(true)
+        puts @remote_config.inspect
+         return @remote_config[key.to_s]
+      end
+      
+      def fetch_db_config(remote = false)
+        if remote
+          YAML.load( capture("cat /etc/wpcap/database.yml"))
+        else
+          YAML.load(File.open("config/database.yml"))
+        end
       end
     
       # Sets database variables from remote database.yaml
       def prepare_env(rails_env = stage)
-        abort "No Database Configuratons Found" if !db_config 
         
-        rails_env = rails_env.to_s     
+        rails_env = rails_env.to_s
+        
+        if !db_config 
+          Wpcap::Utility.error("No Database Configuratons Found")
+          abort  
+        end
+        
+        if remote_config(:db_priv_pass).nil?
+          Wpcap::Utility.error "This no privleged user for this server found in servers ssh enviroment profile (did you set it up with wpcap?)" 
+          abort
+        end
+        
         set(:local_dump)      { "/tmp/#{application}.sql.bz2" }
-
+        
         if db_config[rails_env]
-          set(:db_priv_user) { db_config[rails_env]["priv_username"].nil? ?  db_config[rails_env]["username"] : db_config[rails_env]["priv_username"] }
-          set(:db_priv_pass) { db_config[rails_env]["priv_password"].nil? ?  db_config[rails_env]["password"] : db_config[rails_env]["priv_password"] }
+          
+          set(:db_priv_user) { remote_config(:db_priv_user).nil? ?  db_config[rails_env]["username"] : remote_config(:db_priv_user) }
+          set(:db_priv_pass) { remote_config(:db_priv_pass).nil? ?  db_config[rails_env]["password"] : remote_config(:db_priv_pass) }
           set(:db_host) { db_config[rails_env]["host"] }
           set(:db_database) { db_config[rails_env]["database"] }
           set(:db_username) { db_config[rails_env]["username"] }
           set(:db_password) { db_config[rails_env]["password"] }
           set(:db_encoding) { db_config[rails_env]["encoding"] }
-          set(:db_prefix) { db_config[rails_env]["prefix"].nil? ?  db_config["development"]["prefix"] : db_config[rails_env]["prefix"] }         
-        else
-          Wpcap::Utility.error "No Database Configuration for #{rails_env} Found" 
-          abort
+          set(:db_prefix) { db_config[rails_env]["prefix"] }         
+          
         end
       
       end
-    
-      def update_db_config(hash_to_save)
-        database_yaml = db_config.merge(hash_to_save)
-        print "Saving Database Config file to local Repo"
-        File.open('config/database.yml', 'w') do |f|
-          f.puts YAML::dump(database_yaml).sub("---","").split("\n").map(&:rstrip).join("\n").strip
+      
+      def save_yaml(hash, path)
+        File.open(path, 'w') do |f|
+          f.puts YAML::dump(hash).sub("---","").split("\n").map(&:rstrip).join("\n").strip
         end
       end
-    
+      
+      def update_db_config(stage_config)
+        print "Saving Database Config file to local Repo"
+        database_yaml = db_config.merge(stage_config)
+        save_yaml(database_yaml, 'config/database.yml')
+      end
+      
       def most_recent_backup
         most_recent_sql = capture "cd #{backups_path}; ls -lrt | awk '{ f=$NF }; END{ print f }'"
         return "#{backups_path}/#{most_recent_sql}".strip
       end
-    
+      
+      def restore_dump(dump_path)
+        run "bzcat #{dump_path} | mysql --user=#{db_username} -p --host=#{db_host} #{db_database}" do |ch, stream, out|
+          ch.send_data "#{db_password}\n" if out =~ /^Enter password:/
+          puts out
+        end
+      end
+      
       def database_exits?(environment = stage)
         exists = false
         databases = run_mysql_command("show databases;", environment)
@@ -200,7 +265,7 @@ configuration.load do
           print "databases exists -- skipping"
         end
       end
-    
+
       def run_mysql_command(sql, environment = stage)
         environment = environment.to_s
         prepare_env(environment)
@@ -220,6 +285,7 @@ configuration.load do
         end
         return output
       end
+      
       before "db:mysql:push", "db:mysql:create"
       before "db:mysql:pull", "db:mysql:create_local_db"
       after "deploy:update_code" , "db:mysql:prepare_enviroment"

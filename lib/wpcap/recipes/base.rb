@@ -7,7 +7,7 @@ Capistrano::Configuration.instance(:must_exist) :
 Capistrano.configuration(:must_exist)
 
 configuration.load do
-  
+  default_run_options[:pty] = true
   def template(from, to)
     erb = File.read(File.expand_path("../templates/#{from}", __FILE__))
     put ERB.new(erb).result(binding), to
@@ -21,7 +21,19 @@ configuration.load do
     chars = (('a'..'z').to_a + ('0'..'9').to_a) - %w(i o 0 1 l 0)
     (1..size).collect{|a| chars[rand(chars.size)] }.join
   end
+  
+  def remote_env(value)
+    value = value.to_sym
+    @env = {}
+    unless @env.has_key?(value)
+      result = capture("echo $#{value}", :once => true).chomp 
+      @env[value] = result if result.length > 0 #todo is there a better way to get remove vars?  something where we don't have to parse a string so if a password is blank it's okay? 
+    
+    end
 
+    return @env[value]
+  end
+  
   def run_with_tty(server, cmd)
     # looks like total pizdets
     command = []
