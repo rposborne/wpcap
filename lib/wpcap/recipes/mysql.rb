@@ -26,12 +26,12 @@ configuration.load do
       desc "Save db passwords on server in enviroment so new wpcap installs may provision local databases. "
       task :set_priv_environment, roles: :db do
         #Generate a password for the mysql install  (this will be saved in the enviroment vars of the server)
-        if remote_config(:db_priv_pass).nil?
+        unless remote_file_exists?("/etc/wpcap/database.yml")
           
           set :db_priv_pass, random_password(16)
           run "#{sudo} mkdir -p /etc/wpcap"
-          save_yaml({:db_priv_pass => db_priv_pass, :db_priv_user => db_priv_user}, "/tmp/privdb.yaml")
-          upload "/tmp/privdb.yaml", "/etc/wpcap/database.yaml"
+          save_yaml({"db_priv_pass" => db_priv_pass, "db_priv_user" => "root"}, "/tmp/privdb.yml")
+          upload "/tmp/privdb.yml", "/etc/wpcap/database.yml"
 
         else 
           Wpcap::Utility.error("MYSQL Server Already Configured")
