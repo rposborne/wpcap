@@ -27,5 +27,10 @@ configuration.load do
       end
     end
   
+    desc "Server Enviroment"
+    task :get_server_enviroment do 
+      run "printenv"
+    end
+    
   end
 end
