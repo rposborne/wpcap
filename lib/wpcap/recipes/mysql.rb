@@ -159,7 +159,7 @@ configuration.load do
         prepare_env  
         template_path = "#{shared_path}/config/database.yml"
       
-        unless db_config[rails_env]
+        unless db_config[stage]
           set :db_username, "#{application.split(".").first}_#{stage}"
           set :db_database, "#{application.split(".").first}_#{stage}"
           set :db_password, random_password(16)
@@ -191,9 +191,9 @@ configuration.load do
       end
     
       # Sets database variables from remote database.yaml
-      def prepare_env(rails_env = stage)
+      def prepare_env(load_stage = stage)
         
-        rails_env = rails_env.to_s
+        load_stage = load_stage.to_s
         
         if !db_config 
           Wpcap::Utility.error("No Database Configuratons Found")
@@ -207,16 +207,16 @@ configuration.load do
         
         set(:local_dump)      { "/tmp/#{application}.sql.bz2" }
         
-        if db_config[rails_env]
+        if db_config[load_stage]
           
-          set(:db_priv_user) { remote_config(:db_priv_user).nil? ?  db_config[rails_env]["username"] : remote_config(:db_priv_user) }
-          set(:db_priv_pass) { remote_config(:db_priv_pass).nil? ?  db_config[rails_env]["password"] : remote_config(:db_priv_pass) }
-          set(:db_host) { db_config[rails_env]["host"] }
-          set(:db_database) { db_config[rails_env]["database"] }
-          set(:db_username) { db_config[rails_env]["username"] }
-          set(:db_password) { db_config[rails_env]["password"] }
-          set(:db_encoding) { db_config[rails_env]["encoding"] }
-          set(:db_prefix) { db_config[rails_env]["prefix"] }         
+          set(:db_priv_user) { remote_config(:db_priv_user).nil? ?  db_config[load_stage]["username"] : remote_config(:db_priv_user) }
+          set(:db_priv_pass) { remote_config(:db_priv_pass).nil? ?  db_config[load_stage]["password"] : remote_config(:db_priv_pass) }
+          set(:db_host) { db_config[load_stage]["host"] }
+          set(:db_database) { db_config[load_stage]["database"] }
+          set(:db_username) { db_config[load_stage]["username"] }
+          set(:db_password) { db_config[load_stage]["password"] }
+          set(:db_encoding) { db_config[load_stage]["encoding"] }
+          set(:db_prefix) { db_config[load_stage]["prefix"] }         
           
         end
       
