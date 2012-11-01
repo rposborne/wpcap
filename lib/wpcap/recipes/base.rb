@@ -22,6 +22,8 @@ configuration.load do
     (1..size).collect{|a| chars[rand(chars.size)] }.join
   end
   
+  def remote_file_exists?(full_path)
+    'true' ==  capture("if [ -e #{full_path} ]; then echo 'true'; fi").strip
   end
   
   def run_with_tty(server, cmd)
