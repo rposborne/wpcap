@@ -8,8 +8,12 @@ class Wpcap::Utility
     puts blue("****#{text}****")
   end
   
+  def self.success(text)
+    puts green("****#{text}****")
+  end
+  
   def self.colorize(text, color_code)
-    "\e[#{color_code}m#{text}\e[0m"
+    "\033[1m\e[#{color_code}m#{text}\e[0m\033[22m"
   end
 
   def self.red(text); self.colorize(text, 31); end
