@@ -13,12 +13,10 @@ configuration.load do
     namespace :mysql do
       desc "Install Mysql Database Server"
       task :install_server, roles: :db do
-        create_yaml
         prepare_env
-        
         run "#{sudo} apt-get -y update"
-        run "#{sudo} echo 'mysql-server-5.1 mysql-server/root_password password #{db_priv_pass} ' | #{sudo} debconf-set-selections"
-        run "#{sudo} echo 'mysql-server-5.1 mysql-server/root_password_again password #{db_priv_pass} ' | #{sudo} debconf-set-selections"
+        run "#{sudo} echo 'mysql-server-5.5 mysql-server/root_password password #{db_priv_pass}' | #{sudo} debconf-set-selections"
+        run "#{sudo} echo 'mysql-server-5.5 mysql-server/root_password_again password #{db_priv_pass}' | #{sudo} debconf-set-selections"
         run "#{sudo} apt-get -y install mysql-server"
       end
       after "deploy:install", "db:mysql:install_server"
