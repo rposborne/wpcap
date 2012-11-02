@@ -77,11 +77,20 @@ configuration.load do
         backups.each_with_index do |backup, count|
           printf "%-5s %-20s %-10s %s\n", count + 1 , backup.type , backup.size , backup.at
         end
-        puts "Select a Backup you wish to restore (1-#{backups.size})"
+        Wpcap::Utility.question "Select a Backup you wish to restore (1-#{backups.size})"
         restore_index = $stdin.gets.chomp
         if restore_index
           backup_to_restore = backups[restore_index.to_i - 1 ]
-          puts "#{backups_path}/#{backup_to_restore.name}"
+          full_backup_to_restore_path = "#{backups_path}/#{backup_to_restore.name}"
+          Wpcap::Utility.question "Are you sure you want to restore #{full_backup_to_restore_path} (Y/n)"
+          user_confirm = $stdin.gets.chomp
+          if user_confirm == "Y" or user_confirm == "y"
+            restore_dump(full_backup_to_restore_path)
+            Wpcap::Utility.success "Database reverted to #{backup_to_restore.at}"
+          else
+            Wpcap::Utility.error "Canceling Restore"
+          end
+          
         end
       end
       
