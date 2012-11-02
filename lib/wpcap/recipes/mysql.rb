@@ -53,7 +53,7 @@ configuration.load do
       
         prepare_env
         run "mkdir -p #{backups_path}"
-        filename = "db_backup_#{Time.now.to_f}.sql.bz2"
+        filename = "db_backup.#{Time.now.to_f}.sql.bz2"
         filepath = "#{backups_path}/#{filename}"
         on_rollback { run "rm #{filepath}" }
         run "mysqldump --user=#{db_username} -p --host=#{db_host} #{db_database} | bzip2 -z9 > #{filepath}" do |ch, stream, out|
@@ -107,7 +107,7 @@ configuration.load do
         prepare_env(:development)
         run_locally "#{local_mysql_path}mysqldump --user #{db_username} --password=#{db_password} #{db_database} | bzip2 -z9 > #{local_dump}"
         run "mkdir -p #{backups_path}"
-        filename = "local_upload_#{Time.now.to_f}.sql.bz2"
+        filename = "local_upload.#{Time.now.to_f}.sql.bz2"
         filepath = "#{backups_path}/#{filename}"
         upload "#{local_dump}" , "#{filepath}"
       end
