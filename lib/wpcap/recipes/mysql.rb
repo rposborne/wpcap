@@ -65,10 +65,7 @@ configuration.load do
       desc "Restores the database from the latest compressed dump"
       task :restore_most_recent, :roles => :db, :only => { :primary => true } do
         prepare_env
-        run "bzcat #{most_recent_backup} | mysql --user=#{db_username} -p --host=#{db_host} #{db_database}" do |ch, stream, out|
-          ch.send_data "#{db_password}\n" if out =~ /^Enter password:/
-          puts out
-        end
+        restore_dump(most_recent_backup)
       end
       
       desc "Restores the database from the latest compressed dump"
