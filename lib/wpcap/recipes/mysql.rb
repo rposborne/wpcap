@@ -156,10 +156,9 @@ configuration.load do
     
       desc "Create database.yml in shared path with settings for current stage and test env"
       task :create_yaml do  
-        prepare_env  
-        template_path = "#{shared_path}/config/database.yml"
-      
+        #Create a new database enviroment unless it already exists in config.
         unless db_config[stage]
+          template_path = "#{shared_path}/config/database.yml"
           set :db_username, "#{application.split(".").first}_#{stage}"
           set :db_database, "#{application.split(".").first}_#{stage}"
           set :db_password, random_password(16)
