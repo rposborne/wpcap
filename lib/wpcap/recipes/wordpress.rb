@@ -164,7 +164,7 @@ configuration.load do
     after "db:mysql:pull", "wordpress:update_local_db"
     after "db:mysql:pull", "wordpress:assets_pull"
   
-    desc "Protect system files"
+    desc "[internal] Protect system files"
     task :protect, :except => { :no_release => true } do
       run "chmod 444 #{latest_release}/app/wp-config.php*"
       run "cd #{current_path} && chown -R #{user} . && find . -type d -print0 | xargs -0 chmod 755"
