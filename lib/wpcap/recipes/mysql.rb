@@ -176,8 +176,8 @@ configuration.load do
     
       def remote_config(key)
         @remote_config ||= fetch_db_config(true)
-        puts @remote_config.inspect
-         return @remote_config[key.to_s]
+
+        return @remote_config[key.to_s]
       end
       
       def fetch_db_config(remote = false)
@@ -276,7 +276,7 @@ configuration.load do
         else
           run "mysql --user=#{db_username} --password --execute=\"#{sql}\"" do |channel, stream, data|
             if data =~ /^Enter password:/
-              channel.send_data "#{db_password}\n" 
+              channel.send_data "#{db_password}\n"
             end
             output += data
           end
