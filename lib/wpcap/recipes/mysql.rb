@@ -132,6 +132,7 @@ configuration.load do
     
       desc "Create MySQL database and user for this stage using database.yml values"
       task :create, :roles => :db, :only => { :primary => true } do
+        create_yaml
         prepare_env
         create_db_if_missing
       end 
