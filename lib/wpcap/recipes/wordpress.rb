@@ -50,6 +50,7 @@ configuration.load do
       run "touch #{shared_path}/config/nginx.conf"
       
       # set correct permissions
+      run "chmod -R 755 #{latest_release}/app/wp-content/plugins"
       run "chmod -R 755 #{shared_path}/uploads"
       run "chmod -R 755 #{shared_path}/cache"
     end
