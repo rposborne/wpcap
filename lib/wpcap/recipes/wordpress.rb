@@ -51,7 +51,7 @@ configuration.load do
       
       # set correct permissions
       run "chmod -R 755 #{latest_release}/app/wp-content/plugins"
-      run "chmod -R 755 #{shared_path}/uploads"
+      run "chmod -R 775 #{shared_path}/uploads"
       run "chmod -R 755 #{shared_path}/cache"
     end
   
