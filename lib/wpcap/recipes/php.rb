@@ -9,7 +9,7 @@ configuration.load do
     task :install, roles: :app do
       run "#{sudo} add-apt-repository ppa:ondrej/php5 -y"
       run "#{sudo} apt-get -y update"
-      run "#{sudo} apt-get -y install php5 php5-fpm php5-mysql php5-memcache php-apc"
+      run "#{sudo} apt-get -y install php5 php5-fpm php5-mysql php5-memcache php-apc php5-gd"
     end
     after "deploy:install", "php:install"
   
