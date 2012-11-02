@@ -136,7 +136,6 @@ configuration.load do
     
       desc "Create MySQL database and user for this stage using database.yml values"
       task :create, :roles => :db, :only => { :primary => true } do
-        create_yaml
         prepare_env
         create_db_if_missing
       end 
@@ -159,26 +158,13 @@ configuration.load do
         run_with_tty server, %W( mysql --user=#{db_username} -password#{db_password} --host=#{db_host} #{db_database} )
       end
     
-      desc "Create database.yml in shared path with settings for current stage and test env"
-      task :create_yaml do  
-        #Create a new database enviroment unless it already exists in config.
-        return if db_config[stage]
-        
-        template_path = "#{shared_path}/config/database.yml"
-        set :db_username, "#{application.split(".").first}_#{stage}"
-        set :db_database, "#{application.split(".").first}_#{stage}"
-        set :db_password, random_password(16)
-        set :db_prefix, db_config["development"]["prefix"]
-        run "mkdir -p #{shared_path}/config"
-        template "mysql.yml.erb", template_path
-        server_yaml = capture "cat #{template_path}"
-        server_mysql_config_yaml = YAML.load(server_yaml)
-        update_db_config(server_mysql_config_yaml)
-        
-      end
-    
-      def db_config
-        @db_config ||= fetch_db_config
+      def db_config(reset = false)
+        if reset 
+          @db_config = fetch_db_config
+        else
+          @db_config ||= fetch_db_config
+        end
+      
       end
     
       def remote_config(key)
@@ -213,7 +199,7 @@ configuration.load do
         set(:local_dump)      { "/tmp/#{application}.sql.bz2" }
         
         if db_config[load_stage]
-          
+               
           set(:db_priv_user) { remote_config(:db_priv_user).nil? ?  db_config[load_stage]["username"] : remote_config(:db_priv_user) }
           set(:db_priv_pass) { remote_config(:db_priv_pass).nil? ?  db_config[load_stage]["password"] : remote_config(:db_priv_pass) }
           set(:db_host) { db_config[load_stage]["host"] }
@@ -221,8 +207,23 @@ configuration.load do
           set(:db_username) { db_config[load_stage]["username"] }
           set(:db_password) { db_config[load_stage]["password"] }
           set(:db_encoding) { db_config[load_stage]["encoding"] }
-          set(:db_prefix) { db_config[load_stage]["prefix"] }         
+          set(:db_prefix) { db_config[load_stage]["prefix"] }        
+           
+        else
+
+          set :db_priv_user , remote_config(:db_priv_user) 
+          set :db_priv_pass , remote_config(:db_priv_pass)  
+          set :db_username  , "#{application.split(".").first}_#{stage}"
+          set :db_database  , "#{application.split(".").first}_#{stage}"
+          set :db_password  , random_password(16)
+          set :db_prefix    , db_config["development"]["prefix"]
           
+          run "mkdir -p #{shared_path}/config"
+          template "mysql.yml.erb", "#{shared_path}/config/database.yml"
+          server_yaml = capture "cat #{shared_path}/config/database.yml"
+          server_mysql_config_yaml = YAML.load(server_yaml)
+          update_db_config(server_mysql_config_yaml)
+          db_config(true)
         end
       
       end
@@ -260,6 +261,7 @@ configuration.load do
     
       def create_db_if_missing(environment = stage)
         unless database_exits?(environment)
+          create_yaml
           sql = <<-SQL
           CREATE DATABASE #{db_database};
           GRANT ALL PRIVILEGES ON #{db_database}.* TO #{db_username}@#{db_host} IDENTIFIED BY '#{db_password}';
