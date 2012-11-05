@@ -34,7 +34,6 @@ server {
   location  / {
     try_files $uri $uri/ /index.php?$args;
   }
-
   
   location ~ \.php$ {
     fastcgi_split_path_info ^(.+\.php)(/.+)$;
