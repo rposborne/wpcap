@@ -52,7 +52,10 @@ configuration.load do
       # set correct permissions
       run "chmod -R 755 #{latest_release}/app/wp-content/plugins"
       run "chmod -R 775 #{shared_path}/uploads"
-      run "chmod -R 755 #{shared_path}/cache"
+      run "chmod -R 775 #{shared_path}/cache"
+      run "chmod -R 755 #{latest_release}"
+      run "chown -R -h #{user}:www-data #{latest_release}"
+      run "chown -R -h #{user}:www-data #{shared_path}"
     end
   
     desc "[internal] Touches up the released code. This is called by update_code after the basic deploy finishes."
@@ -167,8 +170,8 @@ configuration.load do
     desc "[internal] Protect system files"
     task :protect, :except => { :no_release => true } do
       run "chmod 444 #{latest_release}/app/wp-config.php*"
-      run "cd #{current_path} && chown -R #{user} . && find . -type d -print0 | xargs -0 chmod 755"
-      run "cd #{shared_path}/uploads && chown -R #{user} . && chmod 755 -R ."
+     # run "cd #{current_path} && chown -R #{user} . && find . -type d -print0 | xargs -0 chmod 755"
+      #run "cd #{shared_path}/uploads && chown -R #{user} . && chmod 755 -R ."
     end
     
     desc "[internal] get current wp template from local db"
@@ -176,6 +179,10 @@ configuration.load do
       db.mysql.prepare_env(:development)
       template = run_locally "#{local_mysql_path}mysql -u #{db_username} -p#{db_password} #{db_database} -e 'SELECT `option_value` FROM `#{db_prefix}options` WHERE `option_name` = \"template\"'"
       set(:wp_template) { template.split("\n")[1]  }
+      unless wp_template.length > 1
+        Wpcap::Utility.error("No Wordpress Template found (Is your local Database Running?)")
+        abort
+      end
     end
     before "nginx:setup", "wordpress:current_wp_template"
     
