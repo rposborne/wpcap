@@ -7,7 +7,7 @@ configuration.load do
     
     #Hooks
     before :deploy, 'db:mysql:dump' 
-    after :deploy , 'backups:cleanup'
+    
   
     #Taks
     desc "List all available backups"

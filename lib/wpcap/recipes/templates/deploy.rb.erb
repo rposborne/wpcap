@@ -16,6 +16,9 @@ set(:deploy_to) { "/home/#{user}/#{application}" }
 set :backups_path, "#{deploy_to}/backups"
 set :keep_backups, 5
 
+# if you want to clean up old backups on each deploy uncomment this:
+# after :deploy , 'backups:cleanup'
+
 # Wordpress Uploads Path
 set :uploads_path, "assets"
 
