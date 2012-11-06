@@ -14,6 +14,7 @@ set(:deploy_to) { "/home/#{user}/#{application}" }
 
 # Database Backup Path
 set :backups_path, "#{deploy_to}/backups"
+set :keep_backups, 5
 
 # Wordpress Uploads Path
 set :uploads_path, "assets"

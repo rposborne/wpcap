@@ -261,7 +261,6 @@ configuration.load do
     
       def create_db_if_missing(environment = stage)
         unless database_exits?(environment)
-          create_yaml
           sql = <<-SQL
           CREATE DATABASE #{db_database};
           GRANT ALL PRIVILEGES ON #{db_database}.* TO #{db_username}@#{db_host} IDENTIFIED BY '#{db_password}';
@@ -297,7 +296,7 @@ configuration.load do
       before "db:mysql:pull", "db:mysql:create_local_db"
       after "deploy:update_code" , "db:mysql:prepare_enviroment"
       after "deploy:setup", "db:mysql:create"
-      before :deploy, 'db:mysql:dump' 
+
     end
   end
 end
