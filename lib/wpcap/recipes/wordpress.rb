@@ -88,6 +88,7 @@ configuration.load do
     task :symlink, :roles => :web, :except => { :no_release => true } do
       run "ln -nfs #{shared_path}/uploads #{latest_release}/app/#{uploads_path}"
       run "ln -nfs #{shared_path}/cache #{latest_release}/app/wp-content/cache"
+      run "rm #{shared_path}/config/nginx.conf"
       run "ln -nfs #{shared_path}/config/nginx.conf #{latest_release}/app/nginx.conf"
     end
 

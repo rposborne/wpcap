@@ -19,10 +19,10 @@ WPcap server configuration
   * memcached
   * varnish (Optional)
   
-  Base
-  * git
-  * debconf-utils
-  * python-software-properties
+  * **Core**
+    * git
+    * debconf-utils
+    * python-software-properties
 
 ## Installation
 
