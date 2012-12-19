@@ -1,64 +1,93 @@
-class Wpcap::Command
-  require 'shellwords'
-  require 'wpcap/utility'
-  
-  def self.run(command, args)
-    Wpcap::Command.send(command, args)
-  end
-  
-  def self.create(args)
-    @application = args.first
-    @wp_root =  File.join( (args[1].nil? ? Dir.pwd : args[1]) , @application.to_s)
-    locale  = args[2].nil? ? "en_US" : args[2]
-    puts @wp_root
-     if File.directory? "#{@wp_root}"
-       puts "Project Folder Already Exists"
-       return
-     end
-    `mkdir -p #{@wp_root}`
-    `cd #{@wp_root} &&  mkdir app`
+module Wpcap
+  class Command
+    require 'shellwords'
+    require 'wpcap/utility'
+    require 'net/http'
 
-    if File.exists? @wp_root + 'app/wp-load.php'
-      puts "This folder seems to already contain wordpress files. "
-      return
+    def self.run(command, args)
+      Wpcap::Command.send(command, args)
     end
 
-    if locale != "en_US"
-      output = IO.popen( "cd #{@wp_root} && curl -s #{Shellwords.escape( 'https://api.wordpress.org/core/version-check/1.5/?locale=')}#{locale} "  )
-      download_url = output[2].gsub(".zip", ".tar.gz")
-      puts  'Downloading WordPress #{output[3]} (#{output[4]})...'
-    else
-      download_url = 'https://wordpress.org/latest.tar.gz';
-      puts 'Downloading latest WordPress (en_US)...'
+    def self.create(args)
+      @application = args.first.to_s.downcase
+      @wp_root = File.join( (args[1].nil? ? Dir.pwd : args[1]) , @application)
+      @app_dir = @wp_root + "/app"
+
+      if File.directory? "#{@wp_root}"
+        warn "Project Folder Already Exists"
+        abort
+      end
+
+      FileUtils.mkdir_p(@wp_root)
+
+      install_wordpress @app_dir
+
+      self.setup
     end
 
-    `cd #{@application} && curl -f #{Shellwords.escape( download_url )} | tar xz`
-    `cd #{@application} && mv wordpress/* app`
-    `rm -rf #{@wp_root}/wordpress`
+    def self.build(args)
+      @wp_root = File.expand_path args.first
+      @application = File.dirname @wp_root
+      puts "Processing #{@wp_root} into a wpcap directory style"
+      unless File.exists? @wp_root + '/wp-load.php'
+        warn "This folder does not appear to be a wordpress directory. "
+        abort
+      end
 
-    puts 'WordPress downloaded.'  
-    self.setup
-  end
-  
-  def self.setup
-    puts "Capifying your project and seting up config directories"
-    unless File.exists? "#{@wp_root}/app/wp-load.php"
-      puts "This does not Appear to be a wpcap"
-      return 
+      FileUtils.mv @wp_root, @wp_root + "/app", :force => true
+      self.setup
     end
-    
-    `capify #{@wp_root}`
-    `touch #{@wp_root}/config/database.yml`
-    `rm #{@wp_root}/config/deploy.rb`
-    `cp #{File.dirname(__FILE__)}/recipes/templates/deploy.rb.erb #{@wp_root}/config/deploy.rb`
-    `mkdir -p #{@wp_root}/config/deploy`
-    `cp #{File.dirname(__FILE__)}/recipes/templates/deploy-stage.rb.erb  #{@wp_root}/config/deploy/staging.rb`
-    `cp #{File.dirname(__FILE__)}/recipes/templates/deploy-stage.rb.erb  #{@wp_root}/config/deploy/production.rb`
-    
-  end
-  
-  def self.help(cmd)
-    puts "`#{cmd}` is not a wpcap command."
-    puts "See `wpcap help` for a list of available commands."
+
+    def self.setup
+      puts "Capifying your project and seting up config directories"
+      unless File.exists? "#{@app_dir}/wp-load.php"
+        warn "This does not Appear to be a wpcap project"
+        abort
+      end
+
+      self.capify(@wp_root)
+
+      FileUtils.mkdir_p "#{@wp_root}/config/deploy"
+      FileUtils.touch "#{@wp_root}/config/database.yml"
+      FileUtils.rm "#{@wp_root}/config/deploy.rb" if File.exists?  "#{@wp_root}/config/deploy.rb"
+      FileUtils.cp "#{File.dirname(__FILE__)}/recipes/templates/deploy.rb.erb"      ,   "#{@wp_root}/config/deploy.rb"
+      FileUtils.cp "#{File.dirname(__FILE__)}/recipes/templates/deploy_stage.rb.erb",   "#{@wp_root}/config/deploy/staging.rb"
+      FileUtils.cp "#{File.dirname(__FILE__)}/recipes/templates/deploy_stage.rb.erb",   "#{@wp_root}/config/deploy/production.rb"
+
+      puts "You are all Done, begin building your wordpress site in the app directory!"
+    end
+
+    def self.help(cmd)
+      puts "`#{cmd}` is not a wpcap command."
+      puts "See `wpcap help` for a list of available commands."
+    end
+
+    private
+
+    def self.install_wordpress(path)
+      unless Dir.exists?("/tmp/wordpress")
+        puts 'Downloading latest WordPress (en_US)...'
+        Net::HTTP.start("wordpress.org") do |http|
+          resp = http.get("/latest.tar.gz")
+          open("/tmp/latest.tar.gz", "wb") do |file|
+            file.write(resp.body)
+          end
+        end
+        `tar -zxf /tmp/latest.tar.gz`
+        puts 'WordPress downloaded and extracted.'
+      end
+
+      FileUtils.mv "/tmp/wordpress/", "#{path}", :force => true
+
+    end
+
+    def self.capify(path)
+
+      ARGV[0] = @wp_root
+      version = ">= 0"
+
+      gem 'capistrano', version
+      load Gem.bin_path('capistrano', 'capify', version)
+    end
   end
 end

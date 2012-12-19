@@ -16,4 +16,11 @@ Gem::Specification.new do |gem|
   gem.version       = Wpcap::VERSION
   gem.add_dependency('capistrano')
   gem.add_dependency('railsless-deploy')
+  gem.add_dependency('thor')
+  gem.add_development_dependency('guard')
+  gem.add_development_dependency('guard-rspec')
+  gem.add_development_dependency('webmock')
+  gem.add_development_dependency('rb-fsevent')
+  gem.add_development_dependency('rspec')
+  gem.add_development_dependency('fakefs')
 end
