@@ -41,9 +41,7 @@ server {
     fastcgi_index index.php;
     include fastcgi_params;
     <% if newrelic %>
-      if (extension_loaded ('newrelic')) {
-        newrelic_set_appname ("<% application %>;All Virtual Hosts");
-      }
+      fastcgi_param PHP_VALUE  "newrelic.appname=<%= application %>;All Virtual Hosts;";
     <% end%>
   }
 

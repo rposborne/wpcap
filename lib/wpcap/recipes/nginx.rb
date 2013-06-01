@@ -20,10 +20,9 @@ configuration.load do
       run "mkdir -p #{shared_path}/logs"
       run "#{sudo} touch #{shared_path}/logs/access.log"
       run "#{sudo} touch #{shared_path}/logs/error.log"
-      restart
     end
     after "deploy:setup", "nginx:setup"
-  
+    after "deploy:setup", "nginx:restart"
     %w[start stop restart].each do |command|
       desc "#{command} nginx"
       task command, roles: :web do
