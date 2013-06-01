@@ -25,6 +25,9 @@ set :uploads_path, "assets"
 #Are you using MAMP on your local machine?
 set :mamp , true
 
+#Are you using intense nginx rewrites or WP3 Total Cache?
+set :custom_nginx , false  
+
 # if you want to clean up old releases on each deploy uncomment this:
 set :keep_releases, 5
 after "deploy", "deploy:cleanup"

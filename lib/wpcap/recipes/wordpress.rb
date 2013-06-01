@@ -41,7 +41,7 @@ configuration.load do
       run "mkdir -p #{backups_path}"
       
       # setup for wp total cache
-      run "touch #{shared_path}/config/nginx.conf"
+      run "touch #{shared_path}/config/nginx.conf"  if  custom_nginx
       
       # set correct permissions
       run "chmod -R 755 #{latest_release}/app/wp-content/plugins"
@@ -57,7 +57,6 @@ configuration.load do
       # remove shared directories
       run "rm -Rf #{latest_release}/app/#{uploads_path}"
       run "rm -Rf #{latest_release}/wp-content/cache"
-      run "rm -Rf #{latest_release}/nginx.conf"
 
       # Removing cruft files.
       run "rm -Rf #{latest_release}/license.txt"
@@ -82,8 +81,12 @@ configuration.load do
     task :symlink, :roles => :web, :except => { :no_release => true } do
       run "ln -nfs #{shared_path}/uploads #{latest_release}/app/#{uploads_path}"
       run "ln -nfs #{shared_path}/cache #{latest_release}/app/wp-content/cache"
-      run "rm #{shared_path}/config/nginx.conf"
+
+      if  custom_nginx
+        run "rm -f #{shared_path}/config/nginx.conf"
       run "ln -nfs #{shared_path}/config/nginx.conf #{latest_release}/app/nginx.conf"
+    end
+
     end
 
     desc "Generate a wp-config.php based upon the app server geneated db password"
@@ -98,7 +101,7 @@ configuration.load do
         sym = env.values.first
         wpconfig = wpconfig.gsub(/define\('#{term}', '.{1,16}'\);/, "define\('#{term}', '#{send("db_"+sym)}');")
       end
-      #define('DB_NAME', 'database_name');
+
       wpconfig = wpconfig.gsub(/\$table_prefix  = '.{1,16}';/, "$table_prefix  = '#{send("db_prefix")}';")
       File.open(stage_config, 'w') {|f| f.write(wpconfig) }
       upload stage_config, "#{latest_release}/app/wp-config.php"

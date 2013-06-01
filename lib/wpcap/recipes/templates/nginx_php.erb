@@ -52,6 +52,9 @@ server {
     break;
   }
   
+  <% if custom_nginx %>
   include <%= shared_path %>/config/nginx.conf;
+  <% end %>
+
 
 }
