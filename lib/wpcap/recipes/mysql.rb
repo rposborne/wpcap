@@ -175,10 +175,12 @@ configuration.load do
       
       def fetch_db_config(remote = false)
         if remote
-          YAML.load( capture("cat /etc/wpcap/database.yml"))
+         config = YAML.load( capture("cat /etc/wpcap/database.yml") )
         else
-          YAML.load(File.open("config/database.yml"))
+         config = YAML.load(File.open("config/database.yml"))
         end
+
+        config || {}
       end
     
       # Sets database variables from remote database.yaml
@@ -187,12 +189,12 @@ configuration.load do
         load_stage = load_stage.to_s
         
         if !db_config 
-          Wpcap::Utility.error("No Database Configuratons Found")
+          Wpcap::Utility.error("No Database Configurations Found")
           abort  
         end
         
         if remote_config(:db_priv_pass).nil?
-          Wpcap::Utility.error "This no privleged user for this server found in servers ssh enviroment profile (did you set it up with wpcap?)" 
+          Wpcap::Utility.error "This no privileged user for this server found in servers ssh environment profile (did you set it up with wpcap?)" 
           abort
         end
         
@@ -216,7 +218,7 @@ configuration.load do
           set :db_username  , "#{application.split(".").first}_#{stage}"
           set :db_database  , "#{application.split(".").first}_#{stage}"
           set :db_password  , random_password(16)
-          set :db_prefix    , db_config["development"]["prefix"]
+          set :db_prefix    , "wp_" || db_config["development"]["prefix"]
           
           run "mkdir -p #{shared_path}/config"
           template "mysql.yml.erb", "#{shared_path}/config/database.yml"
