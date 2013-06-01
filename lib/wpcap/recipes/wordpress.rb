@@ -48,8 +48,6 @@ configuration.load do
       run "chmod -R 775 #{shared_path}/uploads"
       run "chmod -R 775 #{shared_path}/cache"
       run "chmod -R 755 #{latest_release}"
-      run "chown -R -h #{user}:www-data #{latest_release}"
-      run "chown -R -h #{user}:www-data #{shared_path}"
     end
   
     desc "[internal] Touches up the released code. This is called by update_code after the basic deploy finishes."
@@ -129,7 +127,6 @@ configuration.load do
       wpconfig = run_locally "cat app/wp-config.php"
       dev_env = {"development" => {}}
       extraction_terms.each do |env|
-        db.mysql.prepare_env
         term =  env.keys.first
         sym = env.values.first
         dev_env["development"][sym] = wpconfig.match(/define\('#{term}', '(.{1,16})'\);/)[1]
@@ -173,8 +170,8 @@ configuration.load do
     desc "[internal] Protect system files"
     task :protect, :except => { :no_release => true } do
       run "chmod 444 #{latest_release}/app/wp-config.php*"
-     # run "cd #{current_path} && chown -R #{user} . && find . -type d -print0 | xargs -0 chmod 755"
-      #run "cd #{shared_path}/uploads && chown -R #{user} . && chmod 755 -R ."
+      run "cd #{current_path} && chown -R #{user} . && find . -type d -print0 | xargs -0 chmod 755"
+      run "cd #{shared_path}/uploads && chown -R #{user} . && chmod 755 -R ."
     end
     
     desc "[internal] get current wp template from local db"
