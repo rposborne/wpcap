@@ -8,3 +8,9 @@ set :user, "root"
 set :application_url, "your full url here including the protocol (https/http)"
 server "your server address or url here", :web, :app, :db, primary: true
 
+# Database Backup Path
+set :backups_path, "#{deploy_to}/backups"
+set :keep_backups, 5
+
+# if you want to clean up old backups on each deploy uncomment this:
+# after :deploy , 'backups:cleanup'
