@@ -21,11 +21,20 @@ configuration.load do
     chars = (('a'..'z').to_a + ('0'..'9').to_a) - %w(i o 0 1 l 0)
     (1..size).collect{|a| chars[rand(chars.size)] }.join
   end
-  
+
   def remote_file_exists?(full_path)
     'true' ==  capture("if [ -e #{full_path} ]; then echo 'true'; fi").strip
   end
-  
+
+  def set_local_uri
+      httpd_conf = File.read(local_httpd_conf_path)
+      document_root = httpd_conf.match(/^(?!#)DocumentRoot "(.+)"\n/)[1]
+      apache_listen = httpd_conf.match(/^(?!#)Listen ([0-9]{1,16})\n/)[1]
+      current_path = Dir.pwd
+      set(:local_uri ,  "http://localhost:#{apache_listen}#{Dir.pwd.gsub(document_root, '')}/app")
+  end
+
+
   def run_with_tty(server, cmd)
     # looks like total pizdets
     command = []
@@ -43,7 +52,17 @@ configuration.load do
   default_run_options[:pty] = true
   ssh_options[:forward_agent] = true
   set :use_sudo , false
- 
+  set :newrelic , true
+
+  if mamp
+    set_default :local_mysql_path , "/Applications/MAMP/Library/bin/"
+    set_default :local_httpd_conf_path , "/Applications/MAMP/conf/apache/httpd.conf"
+  else
+    set_default :local_mysql_path , ""
+    set_default :local_httpd_conf_path , "/etc/apache2/httpd.conf"
+  end
+  set_local_uri
+
   namespace :deploy do
     desc "Install everything onto the server"
     task :install do
@@ -51,7 +70,7 @@ configuration.load do
       run "#{sudo} apt-get -y install git debconf-utils python-software-properties"
     end
   end
-  
+
   desc "Tail all or a single remote file"
   task :tail do
     ENV["LOGFILE"] ||= "*.log"

@@ -10,13 +10,7 @@ configuration.load do
   
   set_default :uploads_path, "wp-content/uploads"
 
-  if mamp
-    set_default :local_mysql_path , "/Applications/MAMP/Library/bin/"
-    set_default :local_httpd_conf_path , "/Applications/MAMP/conf/apache/httpd.conf"
-  else
-    set_default :local_mysql_path , ""
-    set_default :local_httpd_conf_path , "/etc/apache2/httpd.conf"
-  end
+
 
 
   namespace :db do 
@@ -147,10 +141,16 @@ configuration.load do
     desc "Set URL in database"
     task :updatedb, :roles => :db, :except => { :no_release => true } do
       db.mysql.prepare_env
+
       run "mysql -u #{db_username} -p #{db_database} -e 'UPDATE #{db_prefix}options SET option_value = \"#{application_url}\" WHERE option_name = \"siteurl\" OR option_name = \"home\"'" do |ch, stream, out|
         ch.send_data "#{db_password}\n" if out =~ /^Enter password:/
         puts out
       end 
+
+      run "mysql -u #{db_username} -p #{db_database} -e 'UPDATE #{db_prefix}posts SET post_content = REPLACE(post_content, \"#{local_uri}\", \"#{application_url}\")'" do |ch, stream, out|
+        ch.send_data "#{db_password}\n" if out =~ /^Enter password:/
+        puts out
+      end
     end
     after "db:mysql:push", "wordpress:updatedb"
     after "db:mysql:push", "wordpress:assets_push"
@@ -158,13 +158,12 @@ configuration.load do
     desc "Set URL in local database"
     task :update_local_db, :except => { :no_release => true } do
       db.mysql.prepare_env(:development)
-      httpd_conf = File.read(local_httpd_conf_path)
-      document_root = httpd_conf.match(/^(?!#)DocumentRoot "(.+)"\n/)[1]
-      apache_listen = httpd_conf.match(/^(?!#)Listen ([0-9]{1,16})\n/)[1]
-      current_path = Dir.pwd
-      local_uri =  "http://localhost:#{apache_listen}#{Dir.pwd.gsub(document_root, '')}/app"
+
       run_locally "#{local_mysql_path}mysql -u #{db_username} -p#{db_password} #{db_database} -e 'UPDATE #{db_prefix}options SET option_value = \"#{local_uri}\" WHERE option_name = \"siteurl\" OR option_name = \"home\"'"
+      #Update Absolute URLs for wordpress content (if content is editied locally it will not push correctly to other stages)
+      run_locally "#{local_mysql_path}mysql -u #{db_username} -p#{db_password} #{db_database} -e 'UPDATE #{db_prefix}posts SET post_content = REPLACE(post_content, \"#{application_url}\", \"#{local_uri}\")'"
     end
+
     after "db:mysql:pull", "wordpress:update_local_db"
     after "db:mysql:pull", "wordpress:assets_pull"
   
